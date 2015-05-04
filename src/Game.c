@@ -11,6 +11,10 @@
 #define BG_SIZE_HEIGHT 40
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 480
+#define MAX_PLAT_WIDTH 60
+#define MAX_PLAT_HEIGHT 20
+#define MAX_JUMP_HEIGHT 30
+#define NUM_PLATFORMS 8
 
 typedef struct AABB {
     int x, y, w, h;
@@ -62,6 +66,14 @@ typedef struct BackgroundTile {
     int spriteId;
     bool collision;
 } BackgroundTile;
+
+typedef struct Platform {
+    float posX;
+    float posY;
+    int width;
+    int height;
+    AABB box;
+} Platform;
 
 void animTick(AnimData*, float);
 void animReset(AnimData*);
@@ -119,7 +131,7 @@ int main(void) {
     // Create the background texture array. Going to load
     // everything at the same time for now. Maybe there
     // is a more efficient way to load this later
-    GLuint lambda = glTexImageTGAFile("lambda.tga", NULL, NULL);
+    GLuint lambda = glTexImageTGAFile("../assets/test/lambda.tga", NULL, NULL);
     GLuint aperture = glTexImageTGAFile("aperture.tga", NULL, NULL);
     textures[0] = glTexImageTGAFile("ryu_walk_1.tga", NULL, NULL);
     textures[1] = glTexImageTGAFile("ryu_walk_2.tga", NULL, NULL);
@@ -141,7 +153,6 @@ int main(void) {
 
     // Some initialization for the background
     BackgroundTile background[40][40];
-    AABB backgroundBox;
     for (int i = 0; i < 40; i++) {
         for (int j = 0; j < 40; j++) {
             BackgroundTile tile;
@@ -271,6 +282,26 @@ int main(void) {
     m3AnimDef.frames[3].frameNum = 7;
     m3AnimDef.frames[3].frameTime = 0.1;
     m3AnimData.def = &m2AnimDef;
+
+    // Create initial set of Platforms
+    Platform platforms[8];
+    Platform platform;
+    AABB box;
+    for (int i = 0; i < NUM_PLATFORMS; i++) {
+        int posX = rand() % 30;
+        int posY = i + MAX_JUMP_HEIGHT;
+        int width = rand() % MAX_PLAT_WIDTH + 10;
+        platform.posY = posY;
+        platform.posX = posX;
+        platform.width = width;
+        platform.height = MAX_PLAT_HEIGHT;
+        platform.box.x = posX;
+        platform.box.y = posY;
+        platform.box.w = width;
+        platform.box.h = MAX_PLAT_HEIGHT;
+        platform.box = box;
+        platforms[i] = platform;
+    }
 
     // The game loop
     char shouldExit = 0;
@@ -417,6 +448,16 @@ int main(void) {
         }
         if (AABBIntersect(&camera.box, &m3.box) && !m3.captured) {
             animDraw(&m2AnimData, m3.posX - camera.posX, m3.posY - camera.posY, 40, 40);
+        }
+
+        // Draw the platforms
+        for (int i = 0; i < NUM_PLATFORMS; i++) {
+            // Draw simple sprite here. Can make this more advanced later
+            glDrawSprite(lambda,
+                         platform.posX - camera.posX,
+                         platform.posY - camera.posY,
+                         platform.width,
+                         platform.height);
         }
 
         // This draws the player
