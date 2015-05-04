@@ -9,8 +9,8 @@
 
 #define BG_SIZE_WIDTH 40
 #define BG_SIZE_HEIGHT 40
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 480
+#define WINDOW_WIDTH 480
+#define WINDOW_HEIGHT 640
 #define MAX_PLAT_WIDTH 60
 #define MAX_PLAT_HEIGHT 20
 #define MAX_JUMP_HEIGHT 30
@@ -454,10 +454,10 @@ int main(void) {
         for (int i = 0; i < NUM_PLATFORMS; i++) {
             // Draw simple sprite here. Can make this more advanced later
             glDrawSprite(lambda,
-                         platform.posX - camera.posX,
-                         platform.posY - camera.posY,
-                         platform.width,
-                         platform.height);
+                         platforms[i].posX - camera.posX,
+                         platforms[i].posY - camera.posY,
+                         platforms[i].width,
+                         platforms[i].height);
         }
 
         // This draws the player
