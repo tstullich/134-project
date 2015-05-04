@@ -152,7 +152,8 @@ int main(void) {
     Uint32 currentFrameMs = SDL_GetTicks();
 
     // Some initialization for the background
-    BackgroundTile background[40][40];
+    /* TODO Put this back in with actual textures
+     * BackgroundTile background[40][40];
     for (int i = 0; i < 40; i++) {
         for (int j = 0; j < 40; j++) {
             BackgroundTile tile;
@@ -164,7 +165,7 @@ int main(void) {
             tile.box.h = 40;
             background[i][j] = tile;
         }
-    }
+    }*/
 
     // Set options for camera coordinates to draw background
     Camera camera;
@@ -401,7 +402,8 @@ int main(void) {
         }
 
         // Check for wall collisions and update
-        for (int i = 0; i < 40; i++) {
+        /* TODO Put this back in when we have background tiles
+         * for (int i = 0; i < 40; i++) {
             for (int j = 0; j < 40; j++) {
                 if (AABBIntersect(&camera.box, &background[i][j].box)) {
                     // If a player collides with wall reset position
@@ -413,12 +415,14 @@ int main(void) {
                     }
                 }
             }
-        }
+        }*/
 
         playerPrevX = player.posX;
         playerPrevY = player.posY;
 
         // This draws the background.
+        // TODO Put this back in when we have actual background artwork
+        /*
         for (int i = 0; i < 40; i++) {
             for (int j = 0; j < 40; j++) {
                 if (AABBIntersect(&camera.box, &background[i][j].box)) {
@@ -437,7 +441,7 @@ int main(void) {
                     }
                 }
             }
-        }
+        }*/
 
         // This draws the other objects
         if (AABBIntersect(&camera.box, &m1.box) && !m1.captured) {
