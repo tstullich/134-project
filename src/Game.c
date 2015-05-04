@@ -84,6 +84,7 @@ void updateCamera(Camera, int);
 bool AABBIntersect(const AABB*, const AABB*);
 
 GLuint textures[8];
+int lastStep = 0;
 
 int main(void) {
     // Initialize SDL
@@ -132,7 +133,6 @@ int main(void) {
     // everything at the same time for now. Maybe there
     // is a more efficient way to load this later
     GLuint lambda = glTexImageTGAFile("../assets/test/lambda.tga", NULL, NULL);
-    GLuint aperture = glTexImageTGAFile("aperture.tga", NULL, NULL);
     textures[0] = glTexImageTGAFile("ryu_walk_1.tga", NULL, NULL);
     textures[1] = glTexImageTGAFile("ryu_walk_2.tga", NULL, NULL);
     textures[2] = glTexImageTGAFile("ryu_walk_3.tga", NULL, NULL);
@@ -289,15 +289,15 @@ int main(void) {
     Platform platform;
     AABB box;
     for (int i = 0; i < NUM_PLATFORMS; i++) {
-        int posX = rand() % 30;
-        int posY = i + MAX_JUMP_HEIGHT;
+        int posX = rand() % WINDOW_WIDTH;
+        int lastStep = (rand() % MAX_JUMP_HEIGHT);
         int width = rand() % MAX_PLAT_WIDTH + 10;
-        platform.posY = posY;
+        platform.posY = lastStep;
         platform.posX = posX;
         platform.width = width;
         platform.height = MAX_PLAT_HEIGHT;
         platform.box.x = posX;
-        platform.box.y = posY;
+        platform.box.y = lastStep;
         platform.box.w = width;
         platform.box.h = MAX_PLAT_HEIGHT;
         platform.box = box;
@@ -457,11 +457,13 @@ int main(void) {
         // Draw the platforms
         for (int i = 0; i < NUM_PLATFORMS; i++) {
             // Draw simple sprite here. Can make this more advanced later
+            Platform p = platforms[i];
+            printf("Y: %f\n", p.posY);
             glDrawSprite(lambda,
-                         platforms[i].posX - camera.posX,
-                         platforms[i].posY - camera.posY,
-                         platforms[i].width,
-                         platforms[i].height);
+                         p.posX - camera.posX,
+                         p.posY - camera.posY,
+                         p.width,
+                         p.height);
         }
 
         // This draws the player
