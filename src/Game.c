@@ -13,7 +13,7 @@
 #define WINDOW_HEIGHT 640
 #define MAX_PLAT_WIDTH 60
 #define MAX_PLAT_HEIGHT 20
-#define MAX_JUMP_HEIGHT 30
+#define MAX_JUMP_HEIGHT 60
 #define NUM_PLATFORMS 8
 
 typedef struct AABB {
@@ -82,6 +82,7 @@ void animDraw(AnimData*, int, int, int, int);
 void updatePlayer(Player, int);
 void updateCamera(Camera, int);
 bool AABBIntersect(const AABB*, const AABB*);
+void platformsTick(Platform platforms[]);
 
 GLuint textures[8];
 int lastStep = 0;
@@ -290,18 +291,19 @@ int main(void) {
     AABB box;
     for (int i = 0; i < NUM_PLATFORMS; i++) {
         int posX = rand() % WINDOW_WIDTH;
-        int lastStep = (rand() % MAX_JUMP_HEIGHT);
+        int posY = lastStep + (rand() % MAX_JUMP_HEIGHT);
         int width = rand() % MAX_PLAT_WIDTH + 10;
-        platform.posY = lastStep;
+        platform.posY = posY;
         platform.posX = posX;
         platform.width = width;
         platform.height = MAX_PLAT_HEIGHT;
         platform.box.x = posX;
-        platform.box.y = lastStep;
+        platform.box.y = posY;
         platform.box.w = width;
         platform.box.h = MAX_PLAT_HEIGHT;
         platform.box = box;
         platforms[i] = platform;
+        lastStep = posY;
     }
 
     // The game loop
@@ -358,6 +360,9 @@ int main(void) {
             camera.posY = (camera.posY < 640) ? camera.posY += 4 : camera.posY;
             camera.box.y = (camera.box.y < 640) ? camera.box.y += 4 : camera.box.y;
         }
+
+        // Update platforms to move down
+        platformsTick(platforms);
 
         // Calculating frame updates
         currentFrameMs = SDL_GetTicks();
@@ -458,10 +463,9 @@ int main(void) {
         for (int i = 0; i < NUM_PLATFORMS; i++) {
             // Draw simple sprite here. Can make this more advanced later
             Platform p = platforms[i];
-            printf("Y: %f\n", p.posY);
             glDrawSprite(lambda,
-                         p.posX - camera.posX,
-                         p.posY - camera.posY,
+                         p.posX ,
+                         p.posY ,
                          p.width,
                          p.height);
         }
@@ -533,4 +537,10 @@ bool AABBIntersect(const AABB* box1, const AABB* box2) {
         return false;
     }
     return true;
+}
+
+void platformsTick(Platform platforms[]) {
+    for (int i = 0; i < NUM_PLATFORMS; i++) {
+        platforms[i].posY = platforms[i].posY + 1;
+    }
 }
