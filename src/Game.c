@@ -54,13 +54,6 @@ typedef struct Camera {
     int posY;
 } Camera;
 
-typedef struct Mushroom {
-    float posX;
-    float posY;
-    bool captured;
-    AABB box;
-} Mushroom;
-
 typedef struct BackgroundTile {
     AABB box;
     int spriteId;
@@ -68,8 +61,8 @@ typedef struct BackgroundTile {
 } BackgroundTile;
 
 typedef struct Platform {
-    float posX;
-    float posY;
+    int posX;
+    int posY;
     int width;
     int height;
     AABB box;
@@ -178,7 +171,7 @@ int main(void) {
     camera.box.h = 480;
 
     // Set options for the player coordinates
-    Player player;
+    /*Player player;
     player.posX = 321;
     player.posY = 241;
     player.box.x = 321;
@@ -204,86 +197,7 @@ int main(void) {
     playerAnimDef.frames[2].frameTime = 0.1;
     playerAnimDef.frames[3].frameNum = 3;
     playerAnimDef.frames[3].frameTime = 0.1;
-    playerAnimData.def = &playerAnimDef;
-
-    // Initializing other objects
-    Mushroom m1;
-    m1.captured = false;
-    m1.posX = 160;
-    m1.posY = 40;
-    m1.box.x = 160;
-    m1.box.y = 40;
-    m1.box.w = 40;
-    m1.box.h = 40;
-
-    AnimData m1AnimData;
-    AnimDef m1AnimDef;
-    m1AnimData.curFrame = 0;
-    m1AnimData.timeToNextFrame = 0.1;
-    m1AnimData.isPlaying = true;
-    m1AnimDef.name = "mushroom";
-    m1AnimDef.numFrames = 4;
-    m1AnimDef.frames[0].frameNum = 4;
-    m1AnimDef.frames[0].frameTime = 0.1;
-    m1AnimDef.frames[1].frameNum = 5;
-    m1AnimDef.frames[1].frameTime = 0.1;
-    m1AnimDef.frames[2].frameNum = 6;
-    m1AnimDef.frames[2].frameTime = 0.1;
-    m1AnimDef.frames[3].frameNum = 7;
-    m1AnimDef.frames[3].frameTime = 0.1;
-    m1AnimData.def = &m1AnimDef;
-
-    Mushroom m2;
-    m2.captured = false;
-    m2.posX = 80;
-    m2.posY = 160;
-    m2.box.x = 80;
-    m2.box.y = 160;
-    m2.box.w = 40;
-    m2.box.h = 40;
-
-    AnimData m2AnimData;
-    AnimDef m2AnimDef;
-    m2AnimData.curFrame = 0;
-    m2AnimData.timeToNextFrame = 0.1;
-    m2AnimData.isPlaying = true;
-    m2AnimDef.name = "mushroom";
-    m2AnimDef.numFrames = 4;
-    m2AnimDef.frames[0].frameNum = 4;
-    m2AnimDef.frames[0].frameTime = 0.1;
-    m2AnimDef.frames[1].frameNum = 5;
-    m2AnimDef.frames[1].frameTime = 0.1;
-    m2AnimDef.frames[2].frameNum = 6;
-    m2AnimDef.frames[2].frameTime = 0.1;
-    m2AnimDef.frames[3].frameNum = 7;
-    m2AnimDef.frames[3].frameTime = 0.1;
-    m2AnimData.def = &m2AnimDef;
-
-    Mushroom m3;
-    m3.captured = false;
-    m3.posX = 240;
-    m3.posY = 200;
-    m3.box.x = 240;
-    m3.box.y = 200;
-    m3.box.w = 40;
-    m3.box.h = 40;
-
-    AnimData m3AnimData;
-    AnimDef m3AnimDef;
-    m3AnimData.curFrame = 0;
-    m3AnimData.timeToNextFrame = 0.1;
-    m3AnimData.isPlaying = true;
-    m3AnimDef.name = "mushroom";
-    m3AnimDef.numFrames = 4;
-    m3AnimDef.frames[0].frameNum = 4;
-    m3AnimDef.frames[0].frameTime = 0.1;
-    m3AnimDef.frames[1].frameNum = 5;
-    m3AnimDef.frames[1].frameTime = 0.1;
-    m3AnimDef.frames[2].frameNum = 6;
-    m3AnimDef.frames[2].frameTime = 0.1;
-    m3AnimDef.frames[3].frameNum = 7;
-    m3AnimDef.frames[3].frameTime = 0.1;
-    m3AnimData.def = &m2AnimDef;
+    playerAnimData.def = &playerAnimDef;*/
 
     // Create initial set of Platforms
     Platform platforms[8];
@@ -311,8 +225,8 @@ int main(void) {
     while(!shouldExit) {
         // kbState is updated by the message pump. Copy over the old state before the pump!
         lastFrameMs = currentFrameMs;
-        playerPrevX = player.posX;
-        playerPrevY = player.posY;
+        //playerPrevX = player.posX;
+        //playerPrevY = player.posY;
 
         memcpy(kbPrevState, kbState, sizeof(kbPrevState));
 
@@ -328,20 +242,20 @@ int main(void) {
         // Going to handle keyboard events to move the camera or player
         kbState = SDL_GetKeyboardState(NULL);
         if (kbState[SDL_SCANCODE_RIGHT]) {
-            player.posX = (player.posX < 640) ? player.posX += 1 : player.posX;
-            player.box.x = (player.box.x < 640) ? player.box.x += 1 : player.box.x;
+            //player.posX = (player.posX < 640) ? player.posX += 1 : player.posX;
+            //player.box.x = (player.box.x < 640) ? player.box.x += 1 : player.box.x;
         }
         if (kbState[SDL_SCANCODE_LEFT]) {
-            player.posX = (player.posX > 0) ? player.posX -= 1 : player.posX;
-            player.box.x = (player.box.x > 0) ? player.box.x -= 1 : player.box.x;
+            //player.posX = (player.posX > 0) ? player.posX -= 1 : player.posX;
+            //player.box.x = (player.box.x > 0) ? player.box.x -= 1 : player.box.x;
         }
         if (kbState[SDL_SCANCODE_UP]) {
-            player.posY = (player.posY > 0) ? player.posY -= 1: player.posY;
-            player.box.y = (player.box.y > 0) ? player.box.y -= 1 : player.box.y;
+            //player.posY = (player.posY > 0) ? player.posY -= 1: player.posY;
+            //player.box.y = (player.box.y > 0) ? player.box.y -= 1 : player.box.y;
         }
         if (kbState[SDL_SCANCODE_DOWN]) {
-            player.posY = (player.posY < 640) ? player.posY += 1 : player.posY;
-            player.box.y = (player.box.y < 640) ? player.box.y += 1 : player.box.y;
+            //player.posY = (player.posY < 640) ? player.posY += 1 : player.posY;
+            //player.box.y = (player.box.y < 640) ? player.box.y += 1 : player.box.y;
         }
 
         if (kbState[SDL_SCANCODE_D]) {
@@ -366,45 +280,17 @@ int main(void) {
 
         // Calculating frame updates
         currentFrameMs = SDL_GetTicks();
-        float deltaTime = (currentFrameMs - lastFrameMs) / 1000.0f;
+        //float deltaTime = (currentFrameMs - lastFrameMs) / 1000.0f;
 
         glClearColor(1, 1, 1, 1);
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Update player
-        if (playerAnimData.curFrame == 3) {
+        /*if (playerAnimData.curFrame == 3) {
             animReset(&playerAnimData);
         } else {
             animTick(&playerAnimData, deltaTime);
-        }
-
-        // Update Objects
-        if (m1AnimData.curFrame == 3) {
-            animReset(&m1AnimData);
-        } else {
-            animTick(&m1AnimData, deltaTime);
-        }
-        if (m2AnimData.curFrame == 3) {
-            animReset(&m2AnimData);
-        } else {
-            animTick(&m2AnimData, deltaTime);
-        }
-        if (m3AnimData.curFrame == 3) {
-            animReset(&m3AnimData);
-        } else {
-            animTick(&m3AnimData, deltaTime);
-        }
-
-        // Check for mushroom collisions and update
-        if (AABBIntersect(&player.box, &m1.box)) {
-            m1.captured = true;
-        }
-        if (AABBIntersect(&player.box, &m2.box)) {
-            m2.captured = true;
-        }
-        if (AABBIntersect(&player.box, &m3.box)) {
-            m3.captured = true;
-        }
+        }*/
 
         // Check for wall collisions and update
         /* TODO Put this back in when we have background tiles
@@ -422,8 +308,8 @@ int main(void) {
             }
         }*/
 
-        playerPrevX = player.posX;
-        playerPrevY = player.posY;
+        //playerPrevX = player.posX;
+        //playerPrevY = player.posY;
 
         // This draws the background.
         // TODO Put this back in when we have actual background artwork
@@ -448,17 +334,6 @@ int main(void) {
             }
         }*/
 
-        // This draws the other objects
-        if (AABBIntersect(&camera.box, &m1.box) && !m1.captured) {
-            animDraw(&m1AnimData, m1.posX - camera.posX, m1.posY - camera.posY, 40, 40);
-        }
-        if (AABBIntersect(&camera.box, &m2.box) && !m2.captured) {
-            animDraw(&m2AnimData, m2.posX - camera.posX, m2.posY - camera.posY, 40, 40);
-        }
-        if (AABBIntersect(&camera.box, &m3.box) && !m3.captured) {
-            animDraw(&m2AnimData, m3.posX - camera.posX, m3.posY - camera.posY, 40, 40);
-        }
-
         // Draw the platforms
         for (int i = 0; i < NUM_PLATFORMS; i++) {
             // Draw simple sprite here. Can make this more advanced later
@@ -471,7 +346,7 @@ int main(void) {
         }
 
         // This draws the player
-        animDraw(&playerAnimData, player.posX - camera.posX, player.posY - camera.posY, 40, 40);
+        //animDraw(&playerAnimData, player.posX - camera.posX, player.posY - camera.posY, 40, 40);
         SDL_GL_SwapWindow(window);
     }
 
@@ -542,5 +417,6 @@ bool AABBIntersect(const AABB* box1, const AABB* box2) {
 void platformsTick(Platform platforms[]) {
     for (int i = 0; i < NUM_PLATFORMS; i++) {
         platforms[i].posY = platforms[i].posY + 1;
+        platforms[i].box.y = platforms[i].box.y + 1;
     }
 }
