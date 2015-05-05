@@ -14,7 +14,7 @@
 #define MAX_PLAT_WIDTH 60
 #define MAX_PLAT_HEIGHT 20
 #define MAX_JUMP_HEIGHT 60
-#define NUM_PLATFORMS 8
+#define NUM_PLATFORMS 12
 
 typedef struct AABB {
     int x, y, w, h;
@@ -75,7 +75,7 @@ void animDraw(AnimData*, int, int, int, int);
 void updatePlayer(Player, int);
 void updateCamera(Camera, int);
 bool AABBIntersect(const AABB*, const AABB*);
-void platformsTick(Platform platforms[]);
+void platformsTick(Platform platforms[], Camera);
 
 GLuint textures[8];
 int lastStep = 0;
@@ -276,7 +276,7 @@ int main(void) {
         }
 
         // Update platforms to move down
-        platformsTick(platforms);
+        platformsTick(platforms, camera);
 
         // Calculating frame updates
         currentFrameMs = SDL_GetTicks();
@@ -337,12 +337,11 @@ int main(void) {
         // Draw the platforms
         for (int i = 0; i < NUM_PLATFORMS; i++) {
             // Draw simple sprite here. Can make this more advanced later
-            Platform p = platforms[i];
             glDrawSprite(lambda,
-                         p.posX ,
-                         p.posY ,
-                         p.width,
-                         p.height);
+                         platforms[i].posX ,
+                         platforms[i].posY ,
+                         platforms[i].width,
+                         platforms[i].height);
         }
 
         // This draws the player
@@ -414,9 +413,31 @@ bool AABBIntersect(const AABB* box1, const AABB* box2) {
     return true;
 }
 
-void platformsTick(Platform platforms[]) {
+void platformsTick(Platform platforms[], Camera camera) {
     for (int i = 0; i < NUM_PLATFORMS; i++) {
-        platforms[i].posY = platforms[i].posY + 1;
-        platforms[i].box.y = platforms[i].box.y + 1;
+        // If the platform is in the camera view draw it
+        if (AABBIntersect(&platforms[i].box, &camera.box)) {
+            platforms[i].posY = platforms[i].posY + 1;
+            platforms[i].box.y = platforms[i].box.y + 1;
+            platforms[i] = platforms[i];
+        }
+        else {
+            Platform newPlat;
+            AABB box;
+            int posX = rand() % WINDOW_WIDTH;
+            int posY = lastStep + (rand() % MAX_JUMP_HEIGHT);
+            int width = rand() % MAX_PLAT_WIDTH + 10;
+            newPlat.posY = posY;
+            newPlat.posX = posX;
+            newPlat.width = width;
+            newPlat.height = MAX_PLAT_HEIGHT;
+            newPlat.box.x = posX;
+            newPlat.box.y = posY;
+            newPlat.box.w = width;
+            newPlat.box.h = MAX_PLAT_HEIGHT;
+            newPlat.box = box;
+            platforms[i] = newPlat;
+            lastStep = posY;
+        }
     }
 }
