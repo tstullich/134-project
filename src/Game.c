@@ -12,7 +12,7 @@
 #define WINDOW_WIDTH 480
 #define WINDOW_HEIGHT 640
 #define MAX_PLAT_WIDTH 60
-#define MAX_PLAT_HEIGHT 20
+#define PLAT_HEIGHT 20
 #define MAX_JUMP_HEIGHT 60
 #define NUM_PLATFORMS 12
 
@@ -76,7 +76,8 @@ void animDraw(AnimData*, int, int, int, int);
 void updatePlayer(Player, int);
 void updateCamera(Camera, int);
 bool AABBIntersect(const AABB*, const AABB*);
-void platformsTick(Platform platforms[], Camera);
+void platformsTick(Platform platforms[]);
+void cyclePlatforms(Platform platforms1[], Camera);
 
 GLuint textures[8];
 int lastStep = 0;
@@ -146,30 +147,14 @@ int main(void) {
     Uint32 lastFrameMs = 0;
     Uint32 currentFrameMs = SDL_GetTicks();
 
-    // Some initialization for the background
-    /* TODO Put this back in with actual textures
-     * BackgroundTile background[40][40];
-    for (int i = 0; i < 40; i++) {
-        for (int j = 0; j < 40; j++) {
-            BackgroundTile tile;
-            tile.spriteId = ((i % 2 == 0) || (j % 2 == 0)) ? 0 : 1;
-            tile.collision = (tile.spriteId == 1) ? true : false;
-            tile.box.x = j * 40;
-            tile.box.y = i * 40;
-            tile.box.w = 40;
-            tile.box.h = 40;
-            background[i][j] = tile;
-        }
-    }*/
-
     // Set options for camera coordinates to draw background
     Camera camera;
     camera.posX = 0;
     camera.posY = 0;
     camera.outerBox.x = 0;
     camera.outerBox.y = 0;
-    camera.outerBox.w = 640;
-    camera.outerBox.h = 480;
+    camera.outerBox.w = WINDOW_WIDTH;
+    camera.outerBox.h = WINDOW_HEIGHT;
     camera.innerBox.x = 0;
     camera.innerBox.y = 0;
     camera.innerBox.w = 240;
@@ -205,21 +190,21 @@ int main(void) {
     playerAnimData.def = &playerAnimDef;
 
     // Create initial set of Platforms
-    Platform platforms[8];
+    Platform platforms[NUM_PLATFORMS];
     Platform platform;
     AABB box;
     for (int i = 0; i < NUM_PLATFORMS; i++) {
         int posX = rand() % WINDOW_WIDTH;
-        int posY = lastStep + (rand() % MAX_JUMP_HEIGHT);
+        int posY = lastStep + MAX_JUMP_HEIGHT;
         int width = rand() % MAX_PLAT_WIDTH + 10;
         platform.posY = posY;
         platform.posX = posX;
         platform.width = width;
-        platform.height = MAX_PLAT_HEIGHT;
-        platform.box.x = posX;
-        platform.box.y = posY;
-        platform.box.w = width;
-        platform.box.h = MAX_PLAT_HEIGHT;
+        platform.height = PLAT_HEIGHT;
+        box.x = posX;
+        box.y = posY;
+        box.w = width;
+        box.h = PLAT_HEIGHT;
         platform.box = box;
         platforms[i] = platform;
         lastStep = posY;
@@ -273,14 +258,8 @@ int main(void) {
             player.box.y = (player.box.y < 640) ? player.box.y += 1 : player.box.y;
         }
 
-        /*
-        if (kbState[SDL_SCANCODE_S]) {
-            camera.posY = (camera.posY < 640) ? camera.posY += 4 : camera.posY;
-            camera.box.y = (camera.box.y < 640) ? camera.box.y += 4 : camera.box.y;
-        }*/
-
         // Update platforms to move down
-        platformsTick(platforms, camera);
+        platformsTick(platforms);
 
         // Calculating frame updates
         currentFrameMs = SDL_GetTicks();
@@ -296,57 +275,23 @@ int main(void) {
             animTick(&playerAnimData, deltaTime);
         }*/
 
-        // Check for wall collisions and update
-        /* TODO Put this back in when we have background tiles
-         * for (int i = 0; i < 40; i++) {
-            for (int j = 0; j < 40; j++) {
-                if (AABBIntersect(&camera.box, &background[i][j].box)) {
-                    // If a player collides with wall reset position
-                    if (AABBIntersect(&player.box, &background[i][j].box) && background[i][j].collision) {
-                        player.posX = playerPrevX;
-                        player.box.x = playerPrevX;
-                        player.posY = playerPrevY;
-                        player.box.y = playerPrevY;
-                    }
-                }
-            }
-        }*/
-
         //playerPrevX = player.posX;
         //playerPrevY = player.posY;
-
-        // This draws the background.
-        // TODO Put this back in when we have actual background artwork
-        /*
-        for (int i = 0; i < 40; i++) {
-            for (int j = 0; j < 40; j++) {
-                if (AABBIntersect(&camera.box, &background[i][j].box)) {
-                    if (background[i][j].spriteId == 0) {
-                        glDrawSprite(aperture,
-                                    (j * 40) - camera.posX,
-                                    (i * 40) - camera.posY,
-                                    40,
-                                    40);
-                    } else {
-                        glDrawSprite(lambda,
-                                    (j * 40) - camera.posX,
-                                    (i * 40) - camera.posY,
-                                    40,
-                                    40);
-                    }
-                }
-            }
-        }*/
 
         // Draw the platforms
         for (int i = 0; i < NUM_PLATFORMS; i++) {
             // Draw simple sprite here. Can make this more advanced later
-            glDrawSprite(lambda,
-                         platforms[i].posX ,
-                         platforms[i].posY ,
+            if (AABBIntersect(&platforms[i].box, &camera.outerBox)){
+                glDrawSprite(lambda,
+                         platforms[i].posX,
+                         platforms[i].posY,
                          platforms[i].width,
                          platforms[i].height);
+            }
         }
+
+        // Need to cycle out old platforms and create new ones
+        cyclePlatforms(platforms, camera);
 
         // This draws the player
         //animDraw(&playerAnimData, player.posX - camera.posX, player.posY - camera.posY, 40, 40);
@@ -397,50 +342,53 @@ void animDraw(AnimData* anim, int x, int y, int w, int h) {
 
 bool AABBIntersect(const AABB* box1, const AABB* box2) {
     // box1 to the right
-    if( box1->x > box2->x + box2->w ) {
+    if(box1->x > box2->x + box2->w) {
         return false;
     }
 
     // box1 to the left
-    if( box1->x + box1->w < box2->x ) {
+    if(box1->x + box1->w < box2->x) {
         return false;
     }
 
     // box1 below
-    if( box1->y > box2->y + box2->h ) {
+    if(box1->y > box2->y + box2->h) {
         return false;
     }
     // box1 above
-    if( box1->y + box1->h < box2->y ) {
+    if(box1->y + box1->h < box2->y) {
         return false;
     }
     return true;
 }
 
-void platformsTick(Platform platforms[], Camera camera) {
+void platformsTick(Platform platforms[]) {
     for (int i = 0; i < NUM_PLATFORMS; i++) {
-        // If the platform is in the camera view draw it
-        if (AABBIntersect(&platforms[i].box, &camera.outerBox)) {
-            platforms[i].posY = platforms[i].posY + 1;
-            platforms[i].box.y = platforms[i].box.y + 1;
-            platforms[i] = platforms[i];
-        }
-        else {
-            Platform newPlat;
-            AABB box;
+        platforms[i].posY = platforms[i].posY + 1;
+        platforms[i].box.y = platforms[i].box.y + 1;
+        platforms[i] = platforms[i];
+    }
+}
+
+void cyclePlatforms(Platform platforms[], Camera camera) {
+    Platform platform;
+    AABB box;
+    for (int i = 0; i < NUM_PLATFORMS; i++) {
+        // Platform has dropped out of frame. Need to add new one
+        if (!AABBIntersect(&platforms[i].box, &camera.outerBox)) {
             int posX = rand() % WINDOW_WIDTH;
-            int posY = lastStep + (rand() % MAX_JUMP_HEIGHT);
+            int posY = 0;
             int width = rand() % MAX_PLAT_WIDTH + 10;
-            newPlat.posY = posY;
-            newPlat.posX = posX;
-            newPlat.width = width;
-            newPlat.height = MAX_PLAT_HEIGHT;
-            newPlat.box.x = posX;
-            newPlat.box.y = posY;
-            newPlat.box.w = width;
-            newPlat.box.h = MAX_PLAT_HEIGHT;
-            newPlat.box = box;
-            platforms[i] = newPlat;
+            platform.posY = posY;
+            platform.posX = posX;
+            platform.width = width;
+            platform.height = PLAT_HEIGHT;
+            platform.box.x = posX;
+            platform.box.y = posY;
+            platform.box.w = width;
+            platform.box.h = PLAT_HEIGHT;
+            platform.box = box;
+            platforms[i] = platform;
             lastStep = posY;
         }
     }
