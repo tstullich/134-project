@@ -49,7 +49,8 @@ typedef struct Player {
 } Player;
 
 typedef struct Camera {
-    AABB box;
+    AABB innerBox;
+    AABB outerBox;
     int posX;
     int posY;
 } Camera;
@@ -127,7 +128,7 @@ int main(void) {
     // everything at the same time for now. Maybe there
     // is a more efficient way to load this later
     GLuint lambda = glTexImageTGAFile("../assets/test/lambda.tga", NULL, NULL);
-    textures[0] = glTexImageTGAFile("ryu_walk_1.tga", NULL, NULL);
+    textures[0] = glTexImageTGAFile("../assets/walking-animation/tga/standFaceLeft.tga", NULL, NULL);
     textures[1] = glTexImageTGAFile("ryu_walk_2.tga", NULL, NULL);
     textures[2] = glTexImageTGAFile("ryu_walk_3.tga", NULL, NULL);
     textures[3] = glTexImageTGAFile("ryu_walk_4.tga", NULL, NULL);
@@ -165,13 +166,17 @@ int main(void) {
     Camera camera;
     camera.posX = 0;
     camera.posY = 0;
-    camera.box.x = 0;
-    camera.box.y = 0;
-    camera.box.w = 640;
-    camera.box.h = 480;
+    camera.outerBox.x = 0;
+    camera.outerBox.y = 0;
+    camera.outerBox.w = 640;
+    camera.outerBox.h = 480;
+    camera.innerBox.x = 0;
+    camera.innerBox.y = 0;
+    camera.innerBox.w = 240;
+    camera.innerBox.h = 380;
 
     // Set options for the player coordinates
-    /*Player player;
+    Player player;
     player.posX = 321;
     player.posY = 241;
     player.box.x = 321;
@@ -197,7 +202,7 @@ int main(void) {
     playerAnimDef.frames[2].frameTime = 0.1;
     playerAnimDef.frames[3].frameNum = 3;
     playerAnimDef.frames[3].frameTime = 0.1;
-    playerAnimData.def = &playerAnimDef;*/
+    playerAnimData.def = &playerAnimDef;
 
     // Create initial set of Platforms
     Platform platforms[8];
@@ -225,8 +230,8 @@ int main(void) {
     while(!shouldExit) {
         // kbState is updated by the message pump. Copy over the old state before the pump!
         lastFrameMs = currentFrameMs;
-        //playerPrevX = player.posX;
-        //playerPrevY = player.posY;
+        playerPrevX = player.posX;
+        playerPrevY = player.posY;
 
         memcpy(kbPrevState, kbState, sizeof(kbPrevState));
 
@@ -242,38 +247,37 @@ int main(void) {
         // Going to handle keyboard events to move the camera or player
         kbState = SDL_GetKeyboardState(NULL);
         if (kbState[SDL_SCANCODE_RIGHT]) {
-            //player.posX = (player.posX < 640) ? player.posX += 1 : player.posX;
-            //player.box.x = (player.box.x < 640) ? player.box.x += 1 : player.box.x;
+            player.posX = (player.posX < 640) ? player.posX += 1 : player.posX;
+            player.box.x = (player.box.x < 640) ? player.box.x += 1 : player.box.x;
         }
         if (kbState[SDL_SCANCODE_LEFT]) {
-            //player.posX = (player.posX > 0) ? player.posX -= 1 : player.posX;
-            //player.box.x = (player.box.x > 0) ? player.box.x -= 1 : player.box.x;
+            player.posX = (player.posX > 0) ? player.posX -= 1 : player.posX;
+            player.box.x = (player.box.x > 0) ? player.box.x -= 1 : player.box.x;
         }
         if (kbState[SDL_SCANCODE_UP]) {
-            //player.posY = (player.posY > 0) ? player.posY -= 1: player.posY;
-            //player.box.y = (player.box.y > 0) ? player.box.y -= 1 : player.box.y;
-        }
-        if (kbState[SDL_SCANCODE_DOWN]) {
-            //player.posY = (player.posY < 640) ? player.posY += 1 : player.posY;
-            //player.box.y = (player.box.y < 640) ? player.box.y += 1 : player.box.y;
+            printf("Player: %f\n", player.posY);
+            player.posY = (player.posY >= 0) ? player.posY -= 1: player.posY;
+            player.box.y = (player.box.y >= 0) ? player.box.y -= 1 : player.box.y;
+
+            // If player intersects with inner camera we need to move it with him
+            if (AABBIntersect(&player.box, &camera.innerBox)) {
+                camera.posY = (camera.posY > 0) ? camera.posY -= 4 : camera.posY;
+                camera.outerBox.x = (camera.outerBox.y > 0) ? camera.outerBox.y -= 4 : camera.outerBox.y;
+                camera.innerBox.y = (camera.innerBox.y > 0) ? camera.innerBox.y -= 4 : camera.innerBox.y;
+            }
         }
 
-        if (kbState[SDL_SCANCODE_D]) {
-            camera.posX = (camera.posX < 640) ? camera.posX += 4 : camera.posX;
-            camera.box.x = (camera.box.x < 640) ? camera.box.x += 4 : camera.box.x;
+        // Need to handle player going downwards
+        if (kbState[SDL_SCANCODE_DOWN]) {
+            player.posY = (player.posY < 640) ? player.posY += 1 : player.posY;
+            player.box.y = (player.box.y < 640) ? player.box.y += 1 : player.box.y;
         }
-        if (kbState[SDL_SCANCODE_A]) {
-            camera.posX = (camera.posX > 0) ? camera.posX -= 4 : camera.posX;
-            camera.box.x = (camera.box.x > 0) ? camera.box.x -= 4 : camera.box.x;
-        }
-        if (kbState[SDL_SCANCODE_W]) {
-            camera.posY = (camera.posY > 0) ? camera.posY -= 4: camera.posY;
-            camera.box.y = (camera.box.y > 0) ? camera.box.y -= 4: camera.box.y;
-        }
+
+        /*
         if (kbState[SDL_SCANCODE_S]) {
             camera.posY = (camera.posY < 640) ? camera.posY += 4 : camera.posY;
             camera.box.y = (camera.box.y < 640) ? camera.box.y += 4 : camera.box.y;
-        }
+        }*/
 
         // Update platforms to move down
         platformsTick(platforms, camera);
@@ -416,7 +420,7 @@ bool AABBIntersect(const AABB* box1, const AABB* box2) {
 void platformsTick(Platform platforms[], Camera camera) {
     for (int i = 0; i < NUM_PLATFORMS; i++) {
         // If the platform is in the camera view draw it
-        if (AABBIntersect(&platforms[i].box, &camera.box)) {
+        if (AABBIntersect(&platforms[i].box, &camera.outerBox)) {
             platforms[i].posY = platforms[i].posY + 1;
             platforms[i].box.y = platforms[i].box.y + 1;
             platforms[i] = platforms[i];
