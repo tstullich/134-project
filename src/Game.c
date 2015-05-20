@@ -156,7 +156,6 @@ int main(void) {
 	textures[16] = glTexImageTGAFile("walkRight7.tga", NULL, NULL);
 	textures[17] = glTexImageTGAFile("walkRight8.tga", NULL, NULL);
 
-
 	// Logic to keep track of keyboard pushes
 	unsigned char kbPrevState[SDL_NUM_SCANCODES] = { 0 };
 	const unsigned char* kbState = NULL;
@@ -191,7 +190,6 @@ int main(void) {
 	int playerPrevX = 321;
 	int playerPrevY = 241;
 
-
 	/*player anim data*/
 	AnimData playerAnimData;
 	playerAnimData.curFrame = 0;
@@ -205,7 +203,6 @@ int main(void) {
 	playerStandLeftDef.numFrames = 1;
 	playerStandLeftDef.frames[0].frameNum = 0;
 	playerStandLeftDef.frames[0].frameTime = 0.1;
-	//playerAnimData.def = &playerStandLeftDef;
 
 	/*Player standing right Animation Def*/
 	AnimDef playerStandRightDef;
@@ -213,7 +210,6 @@ int main(void) {
 	playerStandRightDef.numFrames = 1;
 	playerStandRightDef.frames[0].frameNum = 1;
 	playerStandRightDef.frames[0].frameTime = 0.1;
-	//playerAnimData.def = &playerStandRightDef;
 
 	/*Player Walking Left Animation Def*/
 	AnimDef playerWalkingLeftDef;
@@ -235,9 +231,8 @@ int main(void) {
 	playerWalkingLeftDef.frames[6].frameTime = 0.1;
 	playerWalkingLeftDef.frames[7].frameNum = 9;
 	playerWalkingLeftDef.frames[7].frameTime = 0.1;
-	//playerAnimData.def = &playerWalkingLeftDef;
+	playerAnimData.def = &playerWalkingLeftDef;
 
-	/*Player Walking Right Animation Def*/
 	AnimDef playerWalkingRightDef;
 	playerWalkingRightDef.name - "PlayerWalkingRight";
 	playerWalkingRightDef.numFrames = 8;
@@ -257,31 +252,29 @@ int main(void) {
 	playerWalkingRightDef.frames[6].frameTime = 0.1;
 	playerWalkingRightDef.frames[7].frameNum = 17;
 	playerWalkingRightDef.frames[7].frameTime = 0.1;
-	playerAnimData.def = &playerWalkingRightDef;
-
 
 //////////////////////////////PLATFORMS////////////////////////////////////////////////////
 
-	//// Create initial set of Platforms
-	//Platform platforms[NUM_PLATFORMS];
-	//Platform platform;
-	//AABB box;
-	//for (int i = 0; i < NUM_PLATFORMS; i++) {
-	//	int posX = rand() % WINDOW_WIDTH;
-	//	int posY = lastStep + MAX_JUMP_HEIGHT;
-	//	int width = rand() % MAX_PLAT_WIDTH + 10;
-	//	platform.posY = posY;
-	//	platform.posX = posX;
-	//	platform.width = width;
-	//	platform.height = PLAT_HEIGHT;
-	//	box.x = posX;
-	//	box.y = posY;
-	//	box.w = width;
-	//	box.h = PLAT_HEIGHT;
-	//	platform.box = box;
-	//	platforms[i] = platform;
-	//	lastStep = posY;
-	//}
+	// Create initial set of Platforms
+	Platform platforms[NUM_PLATFORMS];
+	Platform platform;
+	AABB box;
+	for (int i = 0; i < NUM_PLATFORMS; i++) {
+		int posX = rand() % WINDOW_WIDTH;
+		int posY = lastStep + MAX_JUMP_HEIGHT;
+		int width = rand() % MAX_PLAT_WIDTH + 10;
+		platform.posY = posY;
+		platform.posX = posX;
+		platform.width = width;
+		platform.height = PLAT_HEIGHT;
+		box.x = posX;
+		box.y = posY;
+		box.w = width;
+		box.h = PLAT_HEIGHT;
+		platform.box = box;
+		platforms[i] = platform;
+		lastStep = posY;
+	}
 //////////////////////////////PLATFORMS////////////////////////////////////////////////////
 
 
@@ -289,11 +282,9 @@ int main(void) {
 	char shouldExit = 0;
 	while (!shouldExit) 
 	{
+		playerAnimData.isPlaying = false;
 		printf("%d\n", playerAnimData.curFrame);
 	
-
-	
-
 		// Calculating frame updates
 		currentFrameMs = SDL_GetTicks();
 		float deltaTime = (currentFrameMs - lastFrameMs) / 1000.0f;
@@ -315,41 +306,32 @@ int main(void) {
 			}
 		}
 
-
-
-
-
-
 		// Going to handle keyboard events to move the camera or player
 		kbState = SDL_GetKeyboardState(NULL);
 
 		if (kbState[SDL_SCANCODE_RIGHT]) {
+			playerAnimData.def = &playerWalkingRightDef;
+			playerAnimData.isPlaying = true;
 			if (player.posX < WINDOW_HEIGHT){
 				player.posX += 1;
 			}
 			if (player.box.x < WINDOW_HEIGHT){
 				player.box.x += 1;
 			}
-		/*	player.posX = (player.posX < 640) ? player.posX += 1 : player.posX;
-			player.box.x = (player.box.x < 640) ? player.box.x += 1 : player.box.x;*/
 		}
 
-
 		if (kbState[SDL_SCANCODE_LEFT]) {
+			playerAnimData.def = &playerWalkingLeftDef;
+			playerAnimData.isPlaying = true;
 			if (player.posX > 0){
-				//animSet(&playerAnimData, &playerWalkingLeftDef);
 				player.posX -= 1;
 			}
 			if (player.box.x > 0){
 				player.box.x -= 1;
 			}
-			//animSet(&playerAnimData, &playerStandLeftDef);
-		
-
-			//player.posX = (player.posX > 0) ? player.posX -= 1 : player.posX;
-			//player.box.x = (player.box.x > 0) ? player.box.x -= 1 : player.box.x;
 		}
 
+		
 		if (kbState[SDL_SCANCODE_UP]) {
 			printf("Player: %f\n", player.posY);
 			player.posY = (player.posY >= 0) ? player.posY -= 1 : player.posY;
@@ -370,19 +352,12 @@ int main(void) {
 		}
 
 		// Update platforms to move down
-		/*UNTICK WHEN DONE KEVIN*/
-		//platformsTick(platforms);
-
-
-
-
-		
+		platformsTick(platforms);
 
 		glClearColor(1, 1, 1, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// Update player
-	
+		// Update player	
 		if (playerAnimData.curFrame == 7) {
 			animReset(&playerAnimData);
 		} else {
@@ -395,30 +370,26 @@ int main(void) {
 
 
 //////////////////////////////PLATFORMS////////////////////////////////////////////////////
-		//// Draw the platforms
-		//for (int i = 0; i < NUM_PLATFORMS; i++) {
-		//	// Draw simple sprite here. Can make this more advanced later
-		//	if (AABBIntersect(&platforms[i].box, &camera.outerBox)){
-		//		glDrawSprite(lambda,
-		//			platforms[i].posX,
-		//			platforms[i].posY,
-		//			platforms[i].width,
-		//			platforms[i].height);
-		//	}
-		//}
+		// Draw the platforms
+		for (int i = 0; i < NUM_PLATFORMS; i++) {
+			// Draw simple sprite here. Can make this more advanced later
+			if (AABBIntersect(&platforms[i].box, &camera.outerBox)){
+				glDrawSprite(lambda,
+					platforms[i].posX,
+					platforms[i].posY,
+					platforms[i].width,
+					platforms[i].height);
+			}
+		}
 
-		//// Need to cycle out old platforms and create new ones
-		//cyclePlatforms(platforms, camera);
+		// Need to cycle out old platforms and create new ones
+		cyclePlatforms(platforms, camera);
 //////////////////////////////PLATFORMS////////////////////////////////////////////////////
-
-
-
 
 		// This draws the player
 		animDraw(&playerAnimData, player.posX - camera.posX, player.posY - camera.posY, 40, 40);
 		SDL_GL_SwapWindow(window);
 	}
-
 	SDL_Quit();
 	return 0;
 }
