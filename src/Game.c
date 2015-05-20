@@ -1,5 +1,5 @@
-#include <GL\glew.h>
-#include <SDL\SDL.h>
+#include <GL/glew.h>
+#include <SDL2/SDL.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +15,7 @@
 #define PLAT_HEIGHT 20
 #define MAX_JUMP_HEIGHT 60
 #define NUM_PLATFORMS 12
+#define WALKING_ANIMS_PATH "../assets/walking-animation/tga/"
 
 typedef struct AABB {
 	int x, y, w, h;
@@ -44,6 +45,8 @@ typedef struct AnimData {
 typedef struct Player {
 	float posX;
 	float posY;
+    float yVelocity;
+    float jumpTimeRemaining;
 	int nearMissTries;
 	AABB box;
 } Player;
@@ -128,7 +131,7 @@ int main(void) {
 	// Create the background texture array. Going to load
 	// everything at the same time for now. Maybe there
 	// is a more efficient way to load this later
-	GLuint lambda = glTexImageTGAFile("lambda.tga", NULL, NULL);
+	GLuint lambda = glTexImageTGAFile("../assets/test/lambda.tga", NULL, NULL);
 
 	/*PLayer Standing Left Animation*/
 	textures[0] = glTexImageTGAFile("standFaceLeft.tga", NULL, NULL);
@@ -137,24 +140,24 @@ int main(void) {
 	textures[1] = glTexImageTGAFile("standFaceRight.tga", NULL, NULL);
 
 	/*Player Walking Left Animation*/
-	textures[2] = glTexImageTGAFile("walkLeft1.tga", NULL, NULL);
-	textures[3] = glTexImageTGAFile("walkLeft2.tga", NULL, NULL);
-	textures[4] = glTexImageTGAFile("walkLeft3.tga", NULL, NULL);
-	textures[5] = glTexImageTGAFile("walkLeft4.tga", NULL, NULL);
-	textures[6] = glTexImageTGAFile("walkLeft5.tga", NULL, NULL);
-	textures[7] = glTexImageTGAFile("walkLeft6.tga", NULL, NULL);
-	textures[8] = glTexImageTGAFile("walkLeft7.tga", NULL, NULL);
-	textures[9] = glTexImageTGAFile("walkLeft8.tga", NULL, NULL);
+	textures[2] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkLeft1.tga", NULL, NULL);
+	textures[3] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkLeft2.tga", NULL, NULL);
+	textures[4] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkLeft3.tga", NULL, NULL);
+	textures[5] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkLeft4.tga", NULL, NULL);
+	textures[6] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkLeft5.tga", NULL, NULL);
+	textures[7] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkLeft6.tga", NULL, NULL);
+	textures[8] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkLeft7.tga", NULL, NULL);
+	textures[9] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkLeft8.tga", NULL, NULL);
 
 	/*Player Walking Right Animation*/
-	textures[10] = glTexImageTGAFile("walkRight1.tga", NULL, NULL);
-	textures[11] = glTexImageTGAFile("walkRight2.tga", NULL, NULL);
-	textures[12] = glTexImageTGAFile("walkRight3.tga", NULL, NULL);
-	textures[13] = glTexImageTGAFile("walkRight4.tga", NULL, NULL);
-	textures[14] = glTexImageTGAFile("walkRight5.tga", NULL, NULL);
-	textures[15] = glTexImageTGAFile("walkRight6.tga", NULL, NULL);
-	textures[16] = glTexImageTGAFile("walkRight7.tga", NULL, NULL);
-	textures[17] = glTexImageTGAFile("walkRight8.tga", NULL, NULL);
+	textures[10] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkRight1.tga", NULL, NULL);
+	textures[11] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkRight2.tga", NULL, NULL);
+	textures[12] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkRight3.tga", NULL, NULL);
+	textures[13] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkRight4.tga", NULL, NULL);
+	textures[14] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkRight5.tga", NULL, NULL);
+	textures[15] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkRight6.tga", NULL, NULL);
+	textures[16] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkRight7.tga", NULL, NULL);
+	textures[17] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkRight8.tga", NULL, NULL);
 
 	// Logic to keep track of keyboard pushes
 	unsigned char kbPrevState[SDL_NUM_SCANCODES] = { 0 };
@@ -181,11 +184,13 @@ int main(void) {
 	// Set options for the player coordinates
 	Player player;
 	player.posX = 0;
-	player.posY = 0;
+	player.posY = 610;
 	player.box.x = 0;
-	player.box.y = 0;
+	player.box.y = 610;
 	player.box.w = 30;
 	player.box.h = 30;
+    player.yVelocity = 10;
+    player.jumpTimeRemaining = 4000;
 	player.nearMissTries = 5;
 	int playerPrevX = 321;
 	int playerPrevY = 241;
@@ -280,10 +285,10 @@ int main(void) {
 
 	// The game loop
 	char shouldExit = 0;
+    char startPlats = false;
 	while (!shouldExit) 
 	{
 		playerAnimData.isPlaying = false;
-		printf("%d\n", playerAnimData.curFrame);
 	
 		// Calculating frame updates
 		currentFrameMs = SDL_GetTicks();
@@ -313,10 +318,10 @@ int main(void) {
 			playerAnimData.def = &playerWalkingRightDef;
 			playerAnimData.isPlaying = true;
 			if (player.posX < WINDOW_HEIGHT){
-				player.posX += 1;
+				player.posX += 4;
 			}
 			if (player.box.x < WINDOW_HEIGHT){
-				player.box.x += 1;
+				player.box.x += 4;
 			}
 		}
 
@@ -324,18 +329,32 @@ int main(void) {
 			playerAnimData.def = &playerWalkingLeftDef;
 			playerAnimData.isPlaying = true;
 			if (player.posX > 0){
-				player.posX -= 1;
+				player.posX -= 4;
 			}
 			if (player.box.x > 0){
-				player.box.x -= 1;
+				player.box.x -= 4;
 			}
 		}
 
 		
 		if (kbState[SDL_SCANCODE_UP]) {
+            startPlats = true;
 			printf("Player: %f\n", player.posY);
-			player.posY = (player.posY >= 0) ? player.posY -= 1 : player.posY;
-			player.box.y = (player.box.y >= 0) ? player.box.y -= 1 : player.box.y;
+
+            if (player.jumpTimeRemaining > 0) {
+                player.yVelocity = MAX_JUMP_HEIGHT;
+                player.jumpTimeRemaining -= 1000;
+
+                // Accounting for gravity with player
+                player.posY = player.posY - player.yVelocity;
+                player.box.y = player.box.y - player.yVelocity;
+            }
+            else {
+                player.yVelocity = 10;
+                // Accounting for gravity with player
+                player.posY = player.posY + player.yVelocity;
+                player.box.y = player.box.y + player.yVelocity;
+            }
 
 			// If player intersects with inner camera we need to move it with him
 			if (AABBIntersect(&player.box, &camera.innerBox)) {
@@ -347,12 +366,14 @@ int main(void) {
 
 		// Need to handle player going downwards
 		if (kbState[SDL_SCANCODE_DOWN]) {
-			player.posY = (player.posY < 640) ? player.posY += 1 : player.posY;
-			player.box.y = (player.box.y < 640) ? player.box.y += 1 : player.box.y;
+			//player.posY = (player.posY < 640) ? player.posY += 1 : player.posY;
+			//player.box.y = (player.box.y < 640) ? player.box.y += 1 : player.box.y;
 		}
 
 		// Update platforms to move down
-		platformsTick(platforms);
+        if (startPlats) {
+		    platformsTick(platforms);
+        }
 
 		glClearColor(1, 1, 1, 1);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -361,7 +382,7 @@ int main(void) {
 		if (playerAnimData.curFrame == 7) {
 			animReset(&playerAnimData);
 		} else {
-		animTick(&playerAnimData, deltaTime);
+		    animTick(&playerAnimData, deltaTime);
 		}
 
 		/*Records previous player position (For collision detection)*/
@@ -465,10 +486,10 @@ void platformsTick(Platform platforms[]) {
 
 void cyclePlatforms(Platform platforms[], Camera camera) {
 	Platform platform;
-	AABB box;
 	for (int i = 0; i < NUM_PLATFORMS; i++) {
 		// Platform has dropped out of frame. Need to add new one
 		if (!AABBIntersect(&platforms[i].box, &camera.outerBox)) {
+	        AABB box;
 			int posX = rand() % WINDOW_WIDTH;
 			int posY = 0;
 			int width = rand() % MAX_PLAT_WIDTH + 10;
@@ -480,8 +501,7 @@ void cyclePlatforms(Platform platforms[], Camera camera) {
 			platform.box.y = posY;
 			platform.box.w = width;
 			platform.box.h = PLAT_HEIGHT;
-			/*Undo this later for Tim*/
-			//platform.box = box;
+			platform.box = box;
 			platforms[i] = platform;
 			lastStep = posY;
 		}
