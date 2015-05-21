@@ -1,5 +1,9 @@
-#include <GL\glew.h>
-#include <SDL\SDL.h>
+#include <GL/glew.h>
+
+/*change to SDL2 for tim*/
+#include <SDL/SDL.h>
+
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,14 +17,16 @@
 #define WINDOW_HEIGHT 640
 #define MAX_PLAT_WIDTH 60
 #define PLAT_HEIGHT 20
-#define MAX_JUMP_HEIGHT 60
+#define MAX_JUMP_HEIGHT 40
 #define NUM_PLATFORMS 12
 #define WALKING_ANIMS_PATH "../assets/walking-animation/tga/"
 
 /*Game States*/
 enum game_states{
 	menu_screen,
-	gameplay
+	gameplay,
+	game_win_screen,
+	game_lose_screen
 };
 
 typedef struct AABB {
@@ -56,6 +62,7 @@ typedef struct Player {
 	int nearMissTries;
 	bool isJumping;
 	bool jumpAgain;
+	int score;
 	AABB box;
 } Player;
 
@@ -99,7 +106,6 @@ bool jumpingAABBIntersect(const AABB*, const AABB*);
 
 GLuint textures[18];
 int lastStep = 0;
-
 
 int main(void) {
 	// Initialize SDL
@@ -150,17 +156,17 @@ int main(void) {
 	// Create the background texture array. Going to load
 	// everything at the same time for now. Maybe there
 	// is a more efficient way to load this later
-	GLuint thelava = glTexImageTGAFile("lava.tga", NULL, NULL);
+	GLuint thelava = glTexImageTGAFile("../assets/test/lava.tga", NULL, NULL);
 	GLuint lambda = glTexImageTGAFile("../assets/test/lambda.tga", NULL, NULL);
-	GLuint title_screen = glTexImageTGAFile("title_screen.tga", NULL, NULL);
+	GLuint title_screen = glTexImageTGAFile("../assets/test/title_screen.tga", NULL, NULL);
+	GLuint game_lose = glTexImageTGAFile("../assets/test/game_lose.tga", NULL,NULL);
+	GLuint game_win = glTexImageTGAFile("../assets/test/game_win.tga", NULL, NULL);
 
 	/*PLayer Standing Left Animation*/
-	textures[0] = glTexImageTGAFile("standFaceLeft.tga", NULL, NULL);
+	//textures[0] = glTexImageTGAFile("standFaceLeft.tga", NULL, NULL);
 
 	/*Player Standing Right Animation*/
-	textures[1] = glTexImageTGAFile("standFaceRight.tga", NULL, NULL);
-
-
+	//textures[1] = glTexImageTGAFile("standFaceRight.tga", NULL, NULL);
 
 	/*Player Walking Left Animation*/
 	textures[2] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkLeft1.tga", NULL, NULL);
@@ -191,7 +197,6 @@ int main(void) {
 	// Need to keep track of when to redraw frames
 	Uint32 lastFrameMs = 0;
 	Uint32 currentFrameMs = SDL_GetTicks();
-	Uint32 lavaTimer = SDL_GetTicks();
 
 	/*Lava initialization*/
 	Lava lava1;
@@ -228,6 +233,7 @@ int main(void) {
 	player.isJumping = false;
 	player.jumpAgain = true;
 	player.nearMissTries = 5;
+	player.score = 0;
 	int playerPrevX = 0;
 	int playerPrevY = 0;
 
@@ -254,7 +260,7 @@ int main(void) {
 
 	/*Player Walking Left Animation Def*/
 	AnimDef playerWalkingLeftDef;
-	playerWalkingLeftDef.name - "PlayerWalkingLeft";
+	playerWalkingLeftDef.name = "PlayerWalkingLeft";
 	playerWalkingLeftDef.numFrames = 8;
 	playerWalkingLeftDef.frames[0].frameNum = 2;
 	playerWalkingLeftDef.frames[0].frameTime = 0.1;
@@ -275,7 +281,7 @@ int main(void) {
 	playerAnimData.def = &playerWalkingLeftDef;
 
 	AnimDef playerWalkingRightDef;
-	playerWalkingRightDef.name - "PlayerWalkingRight";
+	playerWalkingRightDef.name = "PlayerWalkingRight";
 	playerWalkingRightDef.numFrames = 8;
 	playerWalkingRightDef.frames[0].frameNum = 10;
 	playerWalkingRightDef.frames[0].frameTime = 0.1;
@@ -293,8 +299,6 @@ int main(void) {
 	playerWalkingRightDef.frames[6].frameTime = 0.1;
 	playerWalkingRightDef.frames[7].frameNum = 17;
 	playerWalkingRightDef.frames[7].frameTime = 0.1;
-
-	//////////////////////////////PLATFORMS////////////////////////////////////////////////////
 
 	// Create initial set of Platforms
 	Platform platforms[NUM_PLATFORMS];
@@ -329,19 +333,13 @@ int main(void) {
 	box.h = PLAT_HEIGHT;
 	platform.box = box;
 	platforms[0] = platform;
-	//////////////////////////////PLATFORMS////////////////////////////////////////////////////
-
 
 	// The game loop
-
 	char shouldExit = 0;
 	char startPlats = false;
 	while (!shouldExit)
 	{
 		playerAnimData.isPlaying = false;
-
-		/*Printing for diagnostic issue*/
-		//printf("%d\n", SDL_GetTicks());
 
 		// Calculating frame updates
 		currentFrameMs = SDL_GetTicks();
@@ -367,23 +365,20 @@ int main(void) {
 		// Going to handle keyboard events to move the camera or player
 		kbState = SDL_GetKeyboardState(NULL);
 
-		/*Insert Game States Here*/
-
-		switch (currentState){
+		switch (currentState) {
 		case menu_screen:
-			if (kbState[SDL_SCANCODE_RETURN]){
+			if (kbState[SDL_SCANCODE_RETURN]) {
 				currentState = gameplay;
 			}
 
 			glDrawSprite(title_screen, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 			break;
-	
-		case gameplay:
 
+		case gameplay:
 			if (kbState[SDL_SCANCODE_RIGHT]) {
 				playerAnimData.def = &playerWalkingRightDef;
 				playerAnimData.isPlaying = true;
-				if (player.posX < WINDOW_HEIGHT){
+				if (player.posX < WINDOW_HEIGHT) {
 					player.posX += 4;
 					player.box.x += 4;
 				}
@@ -398,10 +393,25 @@ int main(void) {
 				}
 			}
 
-			if (kbState[SDL_SCANCODE_UP]) {
+			if (kbState[SDL_SCANCODE_UP] && player.jumpAgain) {
 				startPlats = true;
-				player.isJumping = (player.jumpAgain) ? true : false;
+				player.isJumping = true;
 				player.jumpAgain = false;
+			}
+
+			// Update player position based on gravity. This should happen when no keys are pressed too
+			if (player.isJumping) {
+				player.yVelocity = 20;
+				player.jumpTimeRemaining -= 1;
+
+				// Accounting for gravity with player
+				player.posY = player.posY - player.yVelocity;
+				player.box.y = player.box.y - player.yVelocity;
+			}
+			else {
+				// Accounting for gravity with player
+				player.posY = player.posY + player.yVelocity;
+				player.box.y = player.box.y + player.yVelocity;
 			}
 
 			// Update platforms to move down
@@ -409,10 +419,10 @@ int main(void) {
 				platformsTick(platforms);
 			}
 
-			glClearColor(1, 1, 1, 1);
+			glClearColor(0, 0, 0, 0);
 			glClear(GL_COLOR_BUFFER_BIT);
 
-			// Update player	
+			// Update player animation
 			if (playerAnimData.curFrame == 7) {
 				animReset(&playerAnimData);
 			}
@@ -420,7 +430,15 @@ int main(void) {
 				animTick(&playerAnimData, deltaTime);
 			}
 
+			//Check for collision with lava (lose condition)
+			if (AABBIntersect(&player.box, &lava1.box)){
+				currentState = game_lose;
+			}
 
+			//Check for collision with ceiling (win condition)
+			if (player.posY <= 0){
+				currentState = game_win;
+			}
 
 			// Check for collisions with platforms and player. Might need to move this first
 			if (player.isJumping) {
@@ -429,24 +447,34 @@ int main(void) {
 						player.yVelocity = 10;
 						player.isJumping = false;
 						player.jumpAgain = true;
+						player.score++;
 					}
 				}
 			}
 			else {
 				// Need to make alternate check for when no jumping is occuring
+				bool isFalling = true;
 				for (int i = 0; i < NUM_PLATFORMS; i++) {
 					if (AABBIntersect(&player.box, &platforms[i].box)) {
 						player.yVelocity = 1;
 						player.posY = playerPrevY;
 						player.box.y = playerPrevY;
+						isFalling = false;
 					}
 				}
+				if (isFalling) {
+					player.posY = player.posY + 10;
+					player.box.y = player.box.y + 10;
+				}
 			}
+
+			// Need to cycle out old platforms and create new ones
+			cyclePlatforms(platforms, camera);
 
 			// Draw the platforms
 			for (int i = 0; i < NUM_PLATFORMS; i++) {
 				// Draw simple sprite here. Can make this more advanced later
-				if (AABBIntersect(&platforms[i].box, &camera.outerBox)){
+				if (AABBIntersect(&platforms[i].box, &camera.outerBox)) {
 					glDrawSprite(lambda,
 						platforms[i].posX,
 						platforms[i].posY,
@@ -455,27 +483,28 @@ int main(void) {
 				}
 			}
 
-			printf("He %f %f\n", player.posX, player.posY);
-			// Need to cycle out old platforms and create new ones
-			cyclePlatforms(platforms, camera);
-
 			/*This draws the lava*/
-
-
-			// This draws the player
-
-
-			lava1.box.h++;
-			lava1.posY--;
-			if (SDL_GetTicks() >= 10000){
+			if (startPlats) {
+				lava1.box.h++;
+				lava1.posY--;
 				glDrawSprite(thelava, lava1.posX, lava1.posY, WINDOW_WIDTH, lava1.box.h);
 			}
+
+			// Draws the player
 			animDraw(&playerAnimData, player.posX - camera.posX, player.posY - camera.posY, 40, 40);
+			break;
+
+		case game_win_screen:
+			glDrawSprite(game_win, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+			break;
+		case game_lose_screen:
+			glDrawSprite(game_lose, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 			break;
 
 		}
 		SDL_GL_SwapWindow(window);
 	}
+	printf("Thanks for playing!\nYour score was: %i\n", player.score);
 	SDL_Quit();
 	return 0;
 }
@@ -553,7 +582,6 @@ bool jumpingAABBIntersect(const AABB* box1, const AABB* box2) {
 	}
 	return true;
 }
-
 
 void platformsTick(Platform platforms[]) {
 	for (int i = 0; i < NUM_PLATFORMS; i++) {
