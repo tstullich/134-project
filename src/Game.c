@@ -56,6 +56,7 @@ typedef struct Player {
 	int nearMissTries;
     bool isJumping;
     bool jumpAgain;
+    int score;
 	AABB box;
 } Player;
 
@@ -154,10 +155,10 @@ int main(void) {
 	GLuint title_screen = glTexImageTGAFile("../assets/test/title_screen.tga", NULL, NULL);
 
 	/*PLayer Standing Left Animation*/
-	textures[0] = glTexImageTGAFile("standFaceLeft.tga", NULL, NULL);
+	//textures[0] = glTexImageTGAFile("standFaceLeft.tga", NULL, NULL);
 
 	/*Player Standing Right Animation*/
-	textures[1] = glTexImageTGAFile("standFaceRight.tga", NULL, NULL);
+	//textures[1] = glTexImageTGAFile("standFaceRight.tga", NULL, NULL);
 
 	/*Player Walking Left Animation*/
 	textures[2] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkLeft1.tga", NULL, NULL);
@@ -224,6 +225,7 @@ int main(void) {
 	player.isJumping = false;
 	player.jumpAgain = true;
 	player.nearMissTries = 5;
+    player.score = 0;
 	int playerPrevX = 0;
 	int playerPrevY = 0;
 
@@ -427,6 +429,7 @@ int main(void) {
                         player.yVelocity = 10;
                         player.isJumping = false;
                         player.jumpAgain = true;
+                        player.score++;
                     }
                 }
             }
@@ -475,6 +478,7 @@ int main(void) {
         }
 		SDL_GL_SwapWindow(window);
     }
+    printf("Thanks for playing!\nYour score was: %i\n", player.score);
     SDL_Quit();
     return 0;
 }
