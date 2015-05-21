@@ -192,7 +192,7 @@ int main(void) {
 	player.box.y = 560;
 	player.box.w = 30;
 	player.box.h = 30;
-    player.yVelocity = 10;
+    player.yVelocity = 20;
     player.jumpTimeRemaining = 3;
     player.isJumping= false;
     player.jumpAgain = true;
@@ -263,8 +263,6 @@ int main(void) {
 	playerWalkingRightDef.frames[7].frameNum = 17;
 	playerWalkingRightDef.frames[7].frameTime = 0.1;
 
-//////////////////////////////PLATFORMS////////////////////////////////////////////////////
-
 	// Create initial set of Platforms
 	Platform platforms[NUM_PLATFORMS];
 	Platform platform;
@@ -298,9 +296,6 @@ int main(void) {
     box.h = PLAT_HEIGHT;
     platform.box = box;
     platforms[0] = platform;
-
-//////////////////////////////PLATFORMS////////////////////////////////////////////////////
-
 
 	// The game loop
 	char shouldExit = 0;
@@ -350,15 +345,14 @@ int main(void) {
 			}
 		}
 
-		if (kbState[SDL_SCANCODE_UP]) {
+		if (kbState[SDL_SCANCODE_UP] && player.jumpAgain) {
             startPlats = true;
-            player.isJumping = (player.jumpAgain) ? true : false;
             player.jumpAgain = false;
 		}
 
         // Update player position based on gravity. This should happen when no keys are pressed too
         if (player.isJumping) {
-            player.yVelocity = MAX_JUMP_HEIGHT;
+            player.yVelocity = 30;
             player.jumpTimeRemaining -= 1;
 
             // Accounting for gravity with player
@@ -398,12 +392,18 @@ int main(void) {
         }
         else {
             // Need to make alternate check for when no jumping is occuring
+            bool isFalling = true;
             for (int i = 0; i < NUM_PLATFORMS; i++) {
                 if (AABBIntersect(&player.box, &platforms[i].box)) {
                     player.yVelocity = 1;
                     player.posY= playerPrevY;
                     player.box.y = playerPrevY;
+                    isFalling = false;
                 }
+            }
+            if (isFalling) {
+                player.posY = player.posY + 5;
+                player.box.y = player.posY + 5;
             }
         }
 
@@ -419,7 +419,6 @@ int main(void) {
 			}
 		}
 
-        printf("He %f %f\n", player.posX, player.posY);
 		// Need to cycle out old platforms and create new ones
 		cyclePlatforms(platforms, camera);
 
