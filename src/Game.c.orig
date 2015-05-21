@@ -149,15 +149,17 @@ int main(void) {
 	// Create the background texture array. Going to load
 	// everything at the same time for now. Maybe there
 	// is a more efficient way to load this later
-	GLuint thelava = glTexImageTGAFile("../assets/test/lava.tga", NULL, NULL);
+	GLuint thelava = glTexImageTGAFile("lava.tga", NULL, NULL);
 	GLuint lambda = glTexImageTGAFile("../assets/test/lambda.tga", NULL, NULL);
-	GLuint title_screen = glTexImageTGAFile("../assets/test/title_screen.tga", NULL, NULL);
+	GLuint title_screen = glTexImageTGAFile("title_screen.tga", NULL, NULL);
 
 	/*PLayer Standing Left Animation*/
 	textures[0] = glTexImageTGAFile("standFaceLeft.tga", NULL, NULL);
 
 	/*Player Standing Right Animation*/
 	textures[1] = glTexImageTGAFile("standFaceRight.tga", NULL, NULL);
+
+
 
 	/*Player Walking Left Animation*/
 	textures[2] = glTexImageTGAFile(WALKING_ANIMS_PATH "walkLeft1.tga", NULL, NULL);
@@ -188,6 +190,7 @@ int main(void) {
 	// Need to keep track of when to redraw frames
 	Uint32 lastFrameMs = 0;
 	Uint32 currentFrameMs = SDL_GetTicks();
+	Uint32 lavaTimer = SDL_GetTicks();
 
 	/*Lava initialization*/
 	Lava lava1;
@@ -324,7 +327,20 @@ int main(void) {
 	platform.box = box;
 	platforms[0] = platform;
 
+    // For testing purposes
+    platform.posY = 600;
+    platform.posX = 0;
+    platform.width = WINDOW_WIDTH - 10;
+    platform.height = PLAT_HEIGHT;
+    box.y = 600;
+    box.x = 0;
+    box.w = WINDOW_WIDTH;
+    box.h = PLAT_HEIGHT;
+    platform.box = box;
+    platforms[0] = platform;
+
 	// The game loop
+
 	char shouldExit = 0;
 	char startPlats = false;
 	while (!shouldExit)
@@ -354,27 +370,32 @@ int main(void) {
 
 		// Going to handle keyboard events to move the camera or player
 		kbState = SDL_GetKeyboardState(NULL);
-        
-        switch (currentState) {
-            case menu_screen:
-            if (kbState[SDL_SCANCODE_RETURN]) {
-                currentState = gameplay;
+
+		if (kbState[SDL_SCANCODE_RIGHT]) {
+			playerAnimData.def = &playerWalkingRightDef;
+			playerAnimData.isPlaying = true;
+			if (player.posX < WINDOW_HEIGHT) {
+				player.posX += 4;
+				player.box.x += 4;
             }
+        }
+		switch (currentState) {
+		case menu_screen:
+			if (kbState[SDL_SCANCODE_RETURN]){
+				currentState = gameplay;
+			}
+			break;
+		case gameplay:
+			if (kbState[SDL_SCANCODE_RIGHT]) {
+				playerAnimData.def = &playerWalkingRightDef;
+				playerAnimData.isPlaying = true;
+				if (player.posX < WINDOW_HEIGHT){
+					player.posX += 4;
+					player.box.x += 4;
+				}
+			}
 
-            glDrawSprite(title_screen, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-            break;
-
-        case gameplay:
-		    if (kbState[SDL_SCANCODE_RIGHT]) {
-			    playerAnimData.def = &playerWalkingRightDef;
-			    playerAnimData.isPlaying = true;
-			    if (player.posX < WINDOW_HEIGHT) {
-				    player.posX += 4;
-				    player.box.x += 4;
-                }
-            }
-
-	        if (kbState[SDL_SCANCODE_LEFT]) {
+			if (kbState[SDL_SCANCODE_LEFT]) {
 				playerAnimData.def = &playerWalkingLeftDef;
 				playerAnimData.isPlaying = true;
 				if (player.posX > 0){
@@ -385,13 +406,12 @@ int main(void) {
 
 		    if (kbState[SDL_SCANCODE_UP] && player.jumpAgain) {
                 startPlats = true;
-                player.isJumping = true;
                 player.jumpAgain = false;
 		    }
 
             // Update player position based on gravity. This should happen when no keys are pressed too
             if (player.isJumping) {
-                player.yVelocity = 20;
+                player.yVelocity = 30;
                 player.jumpTimeRemaining -= 1;
 
                 // Accounting for gravity with player
@@ -403,6 +423,11 @@ int main(void) {
                 player.posY = player.posY + player.yVelocity;
                 player.box.y = player.box.y + player.yVelocity;
             }
+			if (kbState[SDL_SCANCODE_UP]) {
+				startPlats = true;
+				player.isJumping = (player.jumpAgain) ? true : false;
+				player.jumpAgain = false;
+			}
 
 			// Update platforms to move down
 			if (startPlats) {
@@ -412,7 +437,7 @@ int main(void) {
 		    glClearColor(0, 0, 0, 0);
 		    glClear(GL_COLOR_BUFFER_BIT);
 			
-            // Update player animation
+            // Update player	
 			if (playerAnimData.curFrame == 7) {
 				animReset(&playerAnimData);
 			}
@@ -420,60 +445,92 @@ int main(void) {
 				animTick(&playerAnimData, deltaTime);
 			}
 
-            // Check for collisions with platforms and player. Might need to move this first
-            if (player.isJumping) {
-                for (int i = 0; i < NUM_PLATFORMS; i++) {
-                    if (jumpingAABBIntersect(&player.box, &platforms[i].box)) {
-                        player.yVelocity = 10;
-                        player.isJumping = false;
-                        player.jumpAgain = true;
-                    }
+        // Check for collisions with platforms and player. Might need to move this first
+        if (player.isJumping) {
+            for (int i = 0; i < NUM_PLATFORMS; i++) {
+                if (jumpingAABBIntersect(&player.box, &platforms[i].box)) {
+                    player.yVelocity = 10;
+                    player.isJumping = false;
+                    player.jumpAgain = true;
                 }
             }
-            else {
-                // Need to make alternate check for when no jumping is occuring
-                bool isFalling = true;
-                for (int i = 0; i < NUM_PLATFORMS; i++) {
-                    if (AABBIntersect(&player.box, &platforms[i].box)) {
-                        player.yVelocity = 1;
-                        player.posY= playerPrevY;
-                        player.box.y = playerPrevY;
-                        isFalling = false;
-                    }
-                }
-                if (isFalling) {
-                    player.posY = player.posY + 10;
-                    player.box.y = player.box.y + 10;
+        }
+        else {
+            // Need to make alternate check for when no jumping is occuring
+            bool isFalling = true;
+            for (int i = 0; i < NUM_PLATFORMS; i++) {
+                if (AABBIntersect(&player.box, &platforms[i].box)) {
+                    player.yVelocity = 1;
+                    player.posY= playerPrevY;
+                    player.box.y = playerPrevY;
+                    isFalling = false;
                 }
             }
+            if (isFalling) {
+                player.posY = player.posY + 5;
+                player.box.y = player.posY + 5;
+            }
+        }
+
+		// Draw the platforms
+		for (int i = 0; i < NUM_PLATFORMS; i++) {
+			// Draw simple sprite here. Can make this more advanced later
+			if (AABBIntersect(&platforms[i].box, &camera.outerBox)) {
+				glDrawSprite(lambda,
+					platforms[i].posX,
+					platforms[i].posY,
+					platforms[i].width,
+					platforms[i].height);
+            }
+			// Check for collisions with platforms and player. Might need to move this first
+			if (player.isJumping) {
+				for (int i = 0; i < NUM_PLATFORMS; i++) {
+					if (jumpingAABBIntersect(&player.box, &platforms[i].box)) {
+						player.yVelocity = 10;
+						player.isJumping = false;
+						player.jumpAgain = true;
+					}
+				}
+			}
+			else {
+				// Need to make alternate check for when no jumping is occuring
+				for (int i = 0; i < NUM_PLATFORMS; i++) {
+					if (AABBIntersect(&player.box, &platforms[i].box)) {
+						player.yVelocity = 1;
+						player.posY = playerPrevY;
+						player.box.y = playerPrevY;
+					}
+				}
+			}
+
+			// Draw the platforms
+			for (int i = 0; i < NUM_PLATFORMS; i++) {
+				// Draw simple sprite here. Can make this more advanced later
+				if (AABBIntersect(&platforms[i].box, &camera.outerBox)){
+					glDrawSprite(lambda,
+						platforms[i].posX,
+						platforms[i].posY,
+						platforms[i].width,
+						platforms[i].height);
+				}
+			}
 
 			// Need to cycle out old platforms and create new ones
-	        cyclePlatforms(platforms, camera);
-
-            // Draw the platforms
-		    for (int i = 0; i < NUM_PLATFORMS; i++) {
-			    // Draw simple sprite here. Can make this more advanced later
-			    if (AABBIntersect(&platforms[i].box, &camera.outerBox)) {
-				    glDrawSprite(lambda,
-					    platforms[i].posX,
-					    platforms[i].posY,
-					    platforms[i].width,
-					    platforms[i].height);
-                }
-            }
+			cyclePlatforms(platforms, camera);
 
 			/*This draws the lava*/
-			if (startPlats) {
-			    lava1.box.h++;
-			    lava1.posY--;
+			lava1.box.h++;
+			lava1.posY--;
+			if (SDL_GetTicks() >= 10000) {
 				glDrawSprite(thelava, lava1.posX, lava1.posY, WINDOW_WIDTH, lava1.box.h);
 			}
 
             // Draws the player
 			animDraw(&playerAnimData, player.posX - camera.posX, player.posY - camera.posY, 40, 40);
 			break;
-        }
+		}
 		SDL_GL_SwapWindow(window);
+        }
     }
     SDL_Quit();
     return 0;
