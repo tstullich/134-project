@@ -1,9 +1,5 @@
 #include <GL/glew.h>
-
-/*change to SDL2 for tim*/
-#include <SDL/SDL.h>
-
-
+#include <SDL2/SDL.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,9 +56,9 @@ typedef struct Player {
 	float yVelocity;
 	float jumpTimeRemaining;
 	int nearMissTries;
-	bool isJumping;
-	bool jumpAgain;
 	int score;
+    bool isJumping;
+    bool jumpAgain;
 	AABB box;
 } Player;
 
@@ -117,7 +113,7 @@ int main(void) {
 	SDL_GL_SetAttribute(SDL_GL_BUFFER_SIZE, 32);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_Window* window = SDL_CreateWindow(
-		"Press the Arrow Keys to make things happen",
+		"Tim's Great Escape",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		WINDOW_WIDTH,
 		WINDOW_HEIGHT,
@@ -364,27 +360,26 @@ int main(void) {
 
 		// Going to handle keyboard events to move the camera or player
 		kbState = SDL_GetKeyboardState(NULL);
+        switch (currentState) {
+            case menu_screen:
+            if (kbState[SDL_SCANCODE_RETURN]) {
+                currentState = gameplay;
+            }
 
-		switch (currentState) {
-		case menu_screen:
-			if (kbState[SDL_SCANCODE_RETURN]) {
-				currentState = gameplay;
-			}
+            glDrawSprite(title_screen, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+            break;
 
-			glDrawSprite(title_screen, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-			break;
+        case gameplay:
+		    if (kbState[SDL_SCANCODE_RIGHT]) {
+			    playerAnimData.def = &playerWalkingRightDef;
+			    playerAnimData.isPlaying = true;
+			    if (player.posX < WINDOW_HEIGHT) {
+				    player.posX += 4;
+				    player.box.x += 4;
+                }
+            }
 
-		case gameplay:
-			if (kbState[SDL_SCANCODE_RIGHT]) {
-				playerAnimData.def = &playerWalkingRightDef;
-				playerAnimData.isPlaying = true;
-				if (player.posX < WINDOW_HEIGHT) {
-					player.posX += 4;
-					player.box.x += 4;
-				}
-			}
-
-			if (kbState[SDL_SCANCODE_LEFT]) {
+	        if (kbState[SDL_SCANCODE_LEFT]) {
 				playerAnimData.def = &playerWalkingLeftDef;
 				playerAnimData.isPlaying = true;
 				if (player.posX > 0){
@@ -393,36 +388,35 @@ int main(void) {
 				}
 			}
 
-			if (kbState[SDL_SCANCODE_UP] && player.jumpAgain) {
-				startPlats = true;
-				player.isJumping = true;
-				player.jumpAgain = false;
-			}
+		    if (kbState[SDL_SCANCODE_UP] && player.jumpAgain) {
+                startPlats = true;
+                player.isJumping = true;
+                player.jumpAgain = false;
+		    }
 
-			// Update player position based on gravity. This should happen when no keys are pressed too
-			if (player.isJumping) {
-				player.yVelocity = 20;
-				player.jumpTimeRemaining -= 1;
+            // Update player position based on gravity. This should happen when no keys are pressed too
+            if (player.isJumping) {
+                player.yVelocity = 20;
+                player.jumpTimeRemaining -= 1;
 
-				// Accounting for gravity with player
-				player.posY = player.posY - player.yVelocity;
-				player.box.y = player.box.y - player.yVelocity;
-			}
-			else {
-				// Accounting for gravity with player
-				player.posY = player.posY + player.yVelocity;
-				player.box.y = player.box.y + player.yVelocity;
-			}
-
+                // Accounting for gravity with player
+                player.posY = player.posY - player.yVelocity;
+                player.box.y = player.box.y - player.yVelocity;
+            }
+            else {
+                // Accounting for gravity with player
+                player.posY = player.posY + player.yVelocity;
+                player.box.y = player.box.y + player.yVelocity;
+            }
 			// Update platforms to move down
 			if (startPlats) {
 				platformsTick(platforms);
 			}
 
-			glClearColor(0, 0, 0, 0);
-			glClear(GL_COLOR_BUFFER_BIT);
-
-			// Update player animation
+		    glClearColor(0, 0, 0, 0);
+		    glClear(GL_COLOR_BUFFER_BIT);
+			
+            // Update player animation
 			if (playerAnimData.curFrame == 7) {
 				animReset(&playerAnimData);
 			}
@@ -432,12 +426,12 @@ int main(void) {
 
 			//Check for collision with lava (lose condition)
 			if (AABBIntersect(&player.box, &lava1.box)){
-				currentState = game_lose;
+				currentState = game_lose_screen;
 			}
 
 			//Check for collision with ceiling (win condition)
 			if (player.posY <= 0){
-				currentState = game_win;
+				currentState = game_win_screen;
 			}
 
 			// Check for collisions with platforms and player. Might need to move this first
